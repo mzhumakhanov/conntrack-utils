@@ -1,4 +1,4 @@
-TARGETS = conntrack-flush
+TARGETS = conntrack-flush route-monitor
 
 all: $(TARGETS)
 
@@ -12,3 +12,4 @@ install: $(TARGETS)
 	install -s -m 0755 $^ $(DESTDIR)/$(PREFIX)/bin
 
 conntrack-flush: CFLAGS += `pkg-config libnetfilter_conntrack --cflags --libs`
+route-monitor: CFLAGS += `pkg-config libnl-1 --cflags --libs`
