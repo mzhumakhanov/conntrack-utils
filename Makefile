@@ -15,3 +15,4 @@ conntrack-flush: CFLAGS += `pkg-config libnetfilter_conntrack --cflags --libs`
 conntrack-flush: nfct-flush-net.o
 
 route-monitor: CFLAGS += `pkg-config libnl-1 --cflags --libs`
+route-monitor: nl-monitor.o
