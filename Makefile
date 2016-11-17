@@ -1,4 +1,4 @@
-TARGETS = conntrack-flush route-monitor
+TARGETS = conntrack-flush route-monitor conntrack-nat-callidus
 
 all: $(TARGETS)
 
@@ -16,3 +16,6 @@ conntrack-flush: nfct-flush-net.o
 
 route-monitor: CFLAGS += `pkg-config libnl-1 --cflags --libs`
 route-monitor: nl-monitor.o
+
+conntrack-nat-callidus: CFLAGS += `pkg-config libnl-1 libnetfilter_conntrack --cflags --libs`
+conntrack-nat-callidus: nl-monitor.o nfct-flush-net.o
