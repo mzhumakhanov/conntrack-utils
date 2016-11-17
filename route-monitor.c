@@ -26,7 +26,7 @@ static int cb(struct nl_msg *m, void *ctx)
 	printf ("route %s", h->nlmsg_type == RTM_NEWROUTE ? "add" : "del");
 
 	for (
-		rta = (void *) (rtm + 1), len = nlmsg_len (h) + sizeof (*rtm);
+		rta = RTM_RTA (rtm), len = RTM_PAYLOAD (h);
 		RTA_OK (rta, len);
 		rta = RTA_NEXT (rta, len)
 	)
