@@ -12,4 +12,6 @@ install: $(TARGETS)
 	install -s -m 0755 $^ $(DESTDIR)/$(PREFIX)/bin
 
 conntrack-flush: CFLAGS += `pkg-config libnetfilter_conntrack --cflags --libs`
+conntrack-flush: nfct-flush-net.o
+
 route-monitor: CFLAGS += `pkg-config libnl-1 --cflags --libs`
