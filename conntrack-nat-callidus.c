@@ -43,11 +43,14 @@ static int cb(struct nl_msg *m, void *ctx)
 		if (rta->rta_type == RTA_DST)
 			address = RTA_DATA(rta);
 
-	if (address == NULL)
-		return 0;
-
-	net.address = *address;
-	net.mask.s_addr = htonl (0xffffffffL << (32 - rtm->rtm_dst_len));
+	if (address != NULL) {
+		net.address = *address;
+		net.mask.s_addr = htonl (0xffffffffL << (32 - rtm->rtm_dst_len));
+	}
+	else {
+		net.address.s_addr = 0;
+		net.mask.s_addr    = 0;
+	}
 
 	(void) nfct_flush_net (&net);
 
