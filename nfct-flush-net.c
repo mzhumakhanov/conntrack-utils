@@ -36,6 +36,8 @@ int nfct_flush_net (struct in_net *net)
 	if ((c.handle = nfct_open (CONNTRACK, 0)) == NULL)
 		return -1;
 
+	c.net = net;
+
 	nfct_callback_register (c.handle, NFCT_T_ALL, flush_cb, &c);
 
 	ret = nfct_query (c.handle, NFCT_Q_DUMP, &family);
