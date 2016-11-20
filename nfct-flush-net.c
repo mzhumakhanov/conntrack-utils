@@ -13,7 +13,7 @@ static int flush_cb (enum nf_conntrack_msg_type type,
 	struct ctx *c = data;
 	struct in_addr dest;
 
-	if (type != NFCT_T_UPDATE ||
+	if ((type != NFCT_T_NEW && type != NFCT_T_UPDATE) ||
 	    !nfct_attr_is_set (ct, ATTR_IPV4_DST))
 		return NFCT_CB_CONTINUE;
 
