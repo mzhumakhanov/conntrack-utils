@@ -81,7 +81,8 @@ static int cb (struct nl_msg *m, void *ctx)
 
 int main (void)
 {
-	if (nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_IPV4_ROUTE, 0) < 0) {
+	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE) < 0 ||
+	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_IPV4_ROUTE, 0) < 0) {
 		nl_perror ("netlink monitor");
 		return 1;
 	}
