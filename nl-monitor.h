@@ -8,5 +8,6 @@
  * of netlink groups
  */
 int nl_monitor (nl_recvmsg_msg_cb_t cb, int type, ...);
+int nl_execute (nl_recvmsg_msg_cb_t cb, int type, int cmd);
 
 #endif  /* _NL_MONITOR_H */
