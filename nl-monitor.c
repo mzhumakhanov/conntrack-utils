@@ -34,6 +34,5 @@ int nl_monitor (nl_recvmsg_msg_cb_t cb, int type, ...)
 
 	nl_close (h);
 	nl_handle_destroy (h);
-no_handle:
 	return ret;
 }
