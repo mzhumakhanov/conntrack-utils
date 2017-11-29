@@ -6,13 +6,55 @@
 
 #include "nl-monitor.h"
 
-static int cb(struct nl_msg *m, void *ctx)
+static void show_rta (struct rtmsg *rtm, struct rtattr *rta)
+{
+	struct in_addr *address;
+	int n;
+
+	switch (rta->rta_type) {
+	case RTA_TABLE:
+		switch (n = *(int *) RTA_DATA (rta)) {
+		case RT_TABLE_MAIN:
+			printf (" main"); break;
+		case RT_TABLE_LOCAL:
+			printf (" local"); break;
+		default:
+			printf (" table %d", n);
+		}
+		break;
+	case RTA_DST:
+		address = RTA_DATA (rta);
+
+		printf (" dst %s/%d", inet_ntoa (*address), rtm->rtm_dst_len);
+		break;
+	case RTA_GATEWAY:
+		address = RTA_DATA (rta);
+
+		printf (" via %s", inet_ntoa (*address));
+		break;
+	case RTA_OIF:
+		printf (" dev %d", *(int *) RTA_DATA (rta));
+		break;
+	case RTA_PREFSRC:
+		address = RTA_DATA (rta);
+
+		printf (" src %s", inet_ntoa (*address));
+		break;
+	case RTA_PRIORITY:
+		printf (" metric %u", *(unsigned *) RTA_DATA (rta));
+		break;
+	default:
+		printf (" type %d", rta->rta_type);
+		break;
+	}
+}
+
+static int cb (struct nl_msg *m, void *ctx)
 {
 	struct nlmsghdr *h = nlmsg_hdr (m);
 	struct rtmsg *rtm;
-	int len;
 	struct rtattr *rta;
-	struct in_addr *address;
+	int len;
 
 	if (h->nlmsg_type != RTM_NEWROUTE &&
 	    h->nlmsg_type != RTM_DELROUTE)
@@ -30,12 +72,7 @@ static int cb(struct nl_msg *m, void *ctx)
 		RTA_OK (rta, len);
 		rta = RTA_NEXT (rta, len)
 	)
-		if (rta->rta_type == RTA_DST) {
-			address = RTA_DATA(rta);
-
-			printf (" dst %s/%d", inet_ntoa (*address),
-				rtm->rtm_dst_len);
-		}
+		show_rta (rtm, rta);
 
 	printf ("\n");
 
