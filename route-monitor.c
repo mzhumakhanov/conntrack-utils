@@ -8,7 +8,8 @@
 
 static void show_rta (struct rtmsg *rtm, struct rtattr *rta)
 {
-	struct in_addr *address;
+	char buf[INET6_ADDRSTRLEN];
+	const char *p;
 	int n;
 
 	switch (rta->rta_type) {
@@ -23,22 +24,25 @@ static void show_rta (struct rtmsg *rtm, struct rtattr *rta)
 		}
 		break;
 	case RTA_DST:
-		address = RTA_DATA (rta);
+		p = inet_ntop (rtm->rtm_family, RTA_DATA (rta),
+			       buf, sizeof (buf));
 
-		printf (" dst %s/%d", inet_ntoa (*address), rtm->rtm_dst_len);
+		printf (" dst %s/%d", p, rtm->rtm_dst_len);
 		break;
 	case RTA_GATEWAY:
-		address = RTA_DATA (rta);
+		p = inet_ntop (rtm->rtm_family, RTA_DATA (rta),
+			       buf, sizeof (buf));
 
-		printf (" via %s", inet_ntoa (*address));
+		printf (" via %s", p);
 		break;
 	case RTA_OIF:
 		printf (" dev %d", *(int *) RTA_DATA (rta));
 		break;
 	case RTA_PREFSRC:
-		address = RTA_DATA (rta);
+		p = inet_ntop (rtm->rtm_family, RTA_DATA (rta),
+			       buf, sizeof (buf));
 
-		printf (" src %s", inet_ntoa (*address));
+		printf (" src %s", p);
 		break;
 	case RTA_PRIORITY:
 		printf (" metric %u", *(unsigned *) RTA_DATA (rta));
