@@ -6,6 +6,77 @@
 
 #include "nl-monitor.h"
 
+static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
+{
+	char buf[INET6_ADDRSTRLEN];
+	const char *type = "", *p;
+
+	switch (rta->rta_type) {
+	case IFA_LOCAL:		type = "local";		break;
+	case IFA_BROADCAST:	type = "broadcast";	break;
+	case IFA_ANYCAST:	type = "anycast";	break;
+	case IFA_MULTICAST:	type = "multicast";	break;
+	}
+
+	switch (rta->rta_type) {
+	case IFA_LABEL:
+		printf (" label %s", (const char *) RTA_DATA (rta));
+		break;
+	case IFA_ADDRESS:
+		p = inet_ntop (ifa->ifa_family, RTA_DATA (rta),
+			       buf, sizeof (buf));
+
+		printf (" address %s/%d", p, ifa->ifa_prefixlen);
+		break;
+	case IFA_LOCAL:
+	case IFA_BROADCAST:
+	case IFA_ANYCAST:
+	case IFA_MULTICAST:
+		p = inet_ntop (ifa->ifa_family, RTA_DATA (rta),
+			       buf, sizeof (buf));
+
+		printf (" %s %s", type, p);
+		break;
+	case IFA_CACHEINFO:
+		/* ignore it */
+		break;
+	default:
+		printf (" type %d", rta->rta_type);
+		break;
+	}
+}
+
+static int process_addr (struct nlmsghdr *h, struct ifaddrmsg *ifa, void *ctx)
+{
+	struct rtattr *rta;
+	int len;
+
+	if (ifa->ifa_family != AF_INET && ifa->ifa_family != AF_INET6)
+		return 0;
+
+	printf ("address %s", h->nlmsg_type == RTM_NEWADDR ? "add" : "del");
+	printf (" dev %d scope ", ifa->ifa_index);
+
+	switch (ifa->ifa_scope) {
+	case 0:		printf ("global");	break;
+	case 253:	printf ("link");	break;
+	case 254:	printf ("host");	break;
+	default:
+		printf ("%u", ifa->ifa_scope);	break;
+	}
+
+	for (
+		rta = IFA_RTA (ifa), len = IFA_PAYLOAD (h);
+		RTA_OK (rta, len);
+		rta = RTA_NEXT (rta, len)
+	)
+		addr_show_rta (ifa, rta);
+
+	printf ("\n");
+
+	return 0;
+}
+
 static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 {
 	char buf[INET6_ADDRSTRLEN];
@@ -80,6 +151,9 @@ static int cb (struct nl_msg *m, void *ctx)
 	struct nlmsghdr *h = nlmsg_hdr (m);
 
 	switch (h->nlmsg_type) {
+	case RTM_NEWADDR:
+	case RTM_DELADDR:
+		return process_addr (h, nlmsg_data (h), ctx);
 	case RTM_NEWROUTE:
 	case RTM_DELROUTE:
 		return process_route (h, nlmsg_data (h), ctx);
@@ -90,9 +164,12 @@ static int cb (struct nl_msg *m, void *ctx)
 
 int main (void)
 {
-	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE) < 0 ||
+	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETADDR) < 0 ||
+	    nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE) < 0 ||
 	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_IPV4_ROUTE,
-					   RTNLGRP_IPV6_ROUTE, 0) < 0) {
+					   RTNLGRP_IPV6_ROUTE,
+					   RTNLGRP_IPV4_IFADDR,
+					   RTNLGRP_IPV6_IFADDR, 0) < 0) {
 		nl_perror ("netlink monitor");
 		return 1;
 	}
