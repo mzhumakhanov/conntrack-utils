@@ -66,7 +66,7 @@ static int cb (struct nl_msg *m, void *ctx)
 
 	rtm = nlmsg_data (h);
 
-	if (rtm->rtm_family != AF_INET)
+	if (rtm->rtm_family != AF_INET && rtm->rtm_family != AF_INET6)
 		return 0;
 
 	printf ("route %s", h->nlmsg_type == RTM_NEWROUTE ? "add" : "del");
@@ -86,7 +86,8 @@ static int cb (struct nl_msg *m, void *ctx)
 int main (void)
 {
 	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE) < 0 ||
-	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_IPV4_ROUTE, 0) < 0) {
+	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_IPV4_ROUTE,
+					   RTNLGRP_IPV6_ROUTE, 0) < 0) {
 		nl_perror ("netlink monitor");
 		return 1;
 	}
