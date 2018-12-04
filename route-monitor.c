@@ -6,7 +6,7 @@
 
 #include "nl-monitor.h"
 
-static void show_rta (struct rtmsg *rtm, struct rtattr *rta)
+static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 {
 	char buf[INET6_ADDRSTRLEN];
 	const char *p;
@@ -53,18 +53,10 @@ static void show_rta (struct rtmsg *rtm, struct rtattr *rta)
 	}
 }
 
-static int cb (struct nl_msg *m, void *ctx)
+static int process_route (struct nlmsghdr *h, struct rtmsg *rtm, void *ctx)
 {
-	struct nlmsghdr *h = nlmsg_hdr (m);
-	struct rtmsg *rtm;
 	struct rtattr *rta;
 	int len;
-
-	if (h->nlmsg_type != RTM_NEWROUTE &&
-	    h->nlmsg_type != RTM_DELROUTE)
-		return 0;
-
-	rtm = nlmsg_data (h);
 
 	if (rtm->rtm_family != AF_INET && rtm->rtm_family != AF_INET6)
 		return 0;
@@ -76,9 +68,22 @@ static int cb (struct nl_msg *m, void *ctx)
 		RTA_OK (rta, len);
 		rta = RTA_NEXT (rta, len)
 	)
-		show_rta (rtm, rta);
+		route_show_rta (rtm, rta);
 
 	printf ("\n");
+
+	return 0;
+}
+
+static int cb (struct nl_msg *m, void *ctx)
+{
+	struct nlmsghdr *h = nlmsg_hdr (m);
+
+	switch (h->nlmsg_type) {
+	case RTM_NEWROUTE:
+	case RTM_DELROUTE:
+		return process_route (h, nlmsg_data (h), ctx);
+	}
 
 	return 0;
 }
