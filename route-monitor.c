@@ -143,6 +143,9 @@ static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 	case RTA_CACHEINFO:
 		/* ignore it */
 		break;
+	case RTA_MARK:
+		printf (" mark 0x%x", *(unsigned *) RTA_DATA (rta));
+		break;
 	default:
 		printf (" type %d", rta->rta_type);
 		break;
