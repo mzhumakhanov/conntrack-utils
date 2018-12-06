@@ -5,6 +5,46 @@
 #include <netlink/msg.h>
 
 #include "nl-monitor.h"
+#include "rt-label.h"
+
+static void show_proto (unsigned char index)
+{
+	const char *label = rt_proto (index);
+
+	if (index == RTPROT_KERNEL)
+		return;
+
+	if (label != NULL)
+		printf (" proto %s", label);
+	else
+		printf (" proto %u", index);
+}
+
+static void show_scope (unsigned char index)
+{
+	const char *label = rt_scope (index);
+
+	if (index == RT_SCOPE_UNIVERSE)
+		return;
+
+	if (label != NULL)
+		printf (" scope %s", label);
+	else
+		printf (" scope %u", index);
+}
+
+static void show_table (unsigned char index)
+{
+	const char *label = rt_table (index);
+
+	if (index == RT_TABLE_MAIN)
+		return;
+
+	if (label != NULL)
+		printf (" table %s", label);
+	else
+		printf (" table %u", index);
+}
 
 static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
 {
@@ -55,15 +95,6 @@ static int process_addr (struct nlmsghdr *h, struct ifaddrmsg *ifa, void *ctx)
 		return 0;
 
 	printf ("address %s", h->nlmsg_type == RTM_NEWADDR ? "add" : "del");
-	printf (" dev %d scope ", ifa->ifa_index);
-
-	switch (ifa->ifa_scope) {
-	case 0:		printf ("global");	break;
-	case 253:	printf ("link");	break;
-	case 254:	printf ("host");	break;
-	default:
-		printf ("%u", ifa->ifa_scope);	break;
-	}
 
 	for (
 		rta = IFA_RTA (ifa), len = IFA_PAYLOAD (h);
@@ -72,6 +103,8 @@ static int process_addr (struct nlmsghdr *h, struct ifaddrmsg *ifa, void *ctx)
 	)
 		addr_show_rta (ifa, rta);
 
+	printf (" dev %d", ifa->ifa_index);
+	show_scope (ifa->ifa_scope);
 	printf ("\n");
 
 	return 0;
@@ -81,19 +114,8 @@ static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 {
 	char buf[INET6_ADDRSTRLEN];
 	const char *p;
-	int n;
 
 	switch (rta->rta_type) {
-	case RTA_TABLE:
-		switch (n = *(int *) RTA_DATA (rta)) {
-		case RT_TABLE_MAIN:
-			printf (" main"); break;
-		case RT_TABLE_LOCAL:
-			printf (" local"); break;
-		default:
-			printf (" table %d", n);
-		}
-		break;
 	case RTA_DST:
 		p = inet_ntop (rtm->rtm_family, RTA_DATA (rta),
 			       buf, sizeof (buf));
@@ -141,6 +163,9 @@ static int process_route (struct nlmsghdr *h, struct rtmsg *rtm, void *ctx)
 	)
 		route_show_rta (rtm, rta);
 
+	show_table (rtm->rtm_table);
+	show_proto (rtm->rtm_protocol);
+	show_scope (rtm->rtm_scope);
 	printf ("\n");
 
 	return 0;
