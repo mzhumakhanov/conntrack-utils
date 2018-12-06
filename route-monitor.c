@@ -140,6 +140,9 @@ static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 	case RTA_PRIORITY:
 		printf (" metric %u", *(unsigned *) RTA_DATA (rta));
 		break;
+	case RTA_CACHEINFO:
+		/* ignore it */
+		break;
 	default:
 		printf (" type %d", rta->rta_type);
 		break;
