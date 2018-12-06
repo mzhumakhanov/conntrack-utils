@@ -154,6 +154,9 @@ static int process_route (struct nlmsghdr *h, struct rtmsg *rtm, void *ctx)
 	if (rtm->rtm_family != AF_INET && rtm->rtm_family != AF_INET6)
 		return 0;
 
+	if (rtm->rtm_table == RT_TABLE_LOCAL)
+		return 0;
+
 	printf ("route %s", h->nlmsg_type == RTM_NEWROUTE ? "add" : "del");
 
 	for (
