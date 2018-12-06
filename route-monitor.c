@@ -33,7 +33,7 @@ static void show_scope (unsigned char index)
 		printf (" scope %u", index);
 }
 
-static void show_table (unsigned char index)
+static void show_table (unsigned index)
 {
 	const char *label = rt_table (index);
 
@@ -143,6 +143,10 @@ static void route_show_rta (struct rtmsg *rtm, struct rtattr *rta)
 	case RTA_CACHEINFO:
 		/* ignore it */
 		break;
+	case RTA_TABLE:
+		if (rtm->rtm_table == RT_TABLE_UNSPEC)
+			show_table (*(unsigned *) RTA_DATA (rta));
+		break;
 	case RTA_MARK:
 		printf (" mark 0x%x", *(unsigned *) RTA_DATA (rta));
 		break;
@@ -172,7 +176,9 @@ static int process_route (struct nlmsghdr *h, struct rtmsg *rtm, void *ctx)
 	)
 		route_show_rta (rtm, rta);
 
-	show_table (rtm->rtm_table);
+	if (rtm->rtm_table != RT_TABLE_UNSPEC)
+		show_table (rtm->rtm_table);
+
 	show_proto (rtm->rtm_protocol);
 	show_scope (rtm->rtm_scope);
 	printf ("\n");
