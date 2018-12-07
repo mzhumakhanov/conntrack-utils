@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <net/if_arp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
@@ -8,6 +9,31 @@
 
 #include "nl-monitor.h"
 #include "rt-label.h"
+
+static void show_arp_type (unsigned type)
+{
+	printf (" link/");
+
+#define SHOW(type, name)  case ARPHRD_##type: printf (name); break;
+
+	switch (type) {
+	SHOW (ETHER,		"ether")
+	SHOW (INFINIBAND,	"infiniband")
+	SHOW (PPP,		"ppp")
+	SHOW (HDLC,		"hdlc")
+	SHOW (TUNNEL,		"tunnel")
+	SHOW (TUNNEL6,		"tunnel6")
+	SHOW (LOOPBACK,		"loopback")
+	SHOW (SIT,		"sip")
+	SHOW (IPGRE,		"ipgre")
+	SHOW (NONE,		"none")
+
+	default:
+		printf ("%04x", type);
+	}
+
+#undef SHOW
+}
 
 static unsigned show_link_flag (unsigned flags,
 				unsigned flag, const char *name)
@@ -156,6 +182,7 @@ static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
 
 	printf ("link %s", h->nlmsg_type == RTM_NEWLINK ? "add" : "del");
 	printf (" dev %d", o->ifi_index);
+	show_arp_type (o->ifi_type);
 
 	for (
 		rta = IFLA_RTA (o), len = IFLA_PAYLOAD (h);
@@ -164,7 +191,6 @@ static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
 	)
 		link_show_rta (o, rta);
 
-	printf (" dev-type %u", o->ifi_type);
 	show_link_flags (o->ifi_flags);
 	printf ("\n");
 
