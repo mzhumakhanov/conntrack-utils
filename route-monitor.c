@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+
+#include <linux/wireless.h>
 #include <netlink/netlink.h>
 #include <netlink/msg.h>
 
@@ -44,6 +46,87 @@ static void show_table (unsigned index)
 		printf (" table %s", label);
 	else
 		printf (" table %u", index);
+}
+
+static void show_dump (const char *prefix, const void *data, size_t size)
+{
+	const unsigned char *p;
+
+	printf ("%s", prefix);
+
+	for (p = data; size > 0; ++p) {
+		printf ("%02x", *p);
+
+		if (--size != 0)
+			printf (":");
+	}
+}
+
+static void link_show_rta (struct ifinfomsg *o, struct rtattr *rta)
+{
+	struct iw_event *iw;
+
+	switch (rta->rta_type) {
+	case IFLA_ADDRESS:
+		show_dump (" address ", RTA_DATA (rta), RTA_PAYLOAD (rta));
+		break;
+	case IFLA_BROADCAST:
+		show_dump (" broadcast ", RTA_DATA (rta), RTA_PAYLOAD (rta));
+		break;
+	case IFLA_IFNAME:
+		printf (" name %s", (char *) RTA_DATA (rta));
+		break;
+	case IFLA_MTU:
+		printf (" mtu %u", *(unsigned *) RTA_DATA (rta));
+		break;
+	case IFLA_LINK:
+		printf (" link-type %i", *(int *) RTA_DATA (rta));
+		break;
+	case IFLA_TXQLEN:
+		printf (" qlen %u", *(unsigned *) RTA_DATA (rta));
+		break;
+	case IFLA_WIRELESS:
+		iw = (struct iw_event *) RTA_DATA (rta);
+		printf (" wireless %04x", iw->cmd);
+		break;
+	case IFLA_QDISC:
+	case IFLA_STATS:
+	case IFLA_MAP:
+	case IFLA_OPERSTATE:
+	case IFLA_LINKMODE:
+	case IFLA_LINKINFO:
+	case IFLA_STATS64:
+	case IFLA_AF_SPEC:
+	case IFLA_GROUP:
+		/* ignore it */
+		break;
+	default:
+		printf (" type %d", rta->rta_type);
+		show_dump (" ", RTA_DATA (rta), RTA_PAYLOAD (rta));
+		break;
+	}
+}
+
+static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
+{
+	struct rtattr *rta;
+	int len;
+
+	printf ("link %s", h->nlmsg_type == RTM_NEWLINK ? "add" : "del");
+	printf (" dev %d", o->ifi_index);
+
+	for (
+		rta = IFLA_RTA (o), len = IFLA_PAYLOAD (h);
+		RTA_OK (rta, len);
+		rta = RTA_NEXT (rta, len)
+	)
+		link_show_rta (o, rta);
+
+	printf (" dev-type %u", o->ifi_type);
+	printf (" flags %08x", o->ifi_flags);
+	printf ("\n");
+
+	return 0;
 }
 
 static void addr_show_rta (struct ifaddrmsg *ifa, struct rtattr *rta)
@@ -191,6 +274,9 @@ static int cb (struct nl_msg *m, void *ctx)
 	struct nlmsghdr *h = nlmsg_hdr (m);
 
 	switch (h->nlmsg_type) {
+	case RTM_NEWLINK:
+	case RTM_DELLINK:
+		return process_link (h, nlmsg_data (h), ctx);
 	case RTM_NEWADDR:
 	case RTM_DELADDR:
 		return process_addr (h, nlmsg_data (h), ctx);
@@ -204,9 +290,11 @@ static int cb (struct nl_msg *m, void *ctx)
 
 int main (void)
 {
-	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETADDR) < 0 ||
+	if (nl_execute (cb, NETLINK_ROUTE, RTM_GETLINK) < 0 ||
+	    nl_execute (cb, NETLINK_ROUTE, RTM_GETADDR) < 0 ||
 	    nl_execute (cb, NETLINK_ROUTE, RTM_GETROUTE) < 0 ||
-	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_IPV4_ROUTE,
+	    nl_monitor (cb, NETLINK_ROUTE, RTNLGRP_LINK,
+					   RTNLGRP_IPV4_ROUTE,
 					   RTNLGRP_IPV6_ROUTE,
 					   RTNLGRP_IPV4_IFADDR,
 					   RTNLGRP_IPV6_IFADDR, 0) < 0) {
