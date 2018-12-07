@@ -9,6 +9,48 @@
 #include "nl-monitor.h"
 #include "rt-label.h"
 
+static unsigned show_link_flag (unsigned flags,
+				unsigned flag, const char *name)
+{
+	if ((flags & flag) != 0) {
+		printf ("%s", name);
+
+		if ((flags &= ~flag) != 0)
+			printf (",");
+	}
+
+	return flags;
+}
+
+static void show_link_flags (unsigned flags)
+{
+	printf (" <");
+
+#define SHOW(name)  flags = show_link_flag (flags, IFF_##name, #name)
+
+	SHOW (UP);
+	SHOW (BROADCAST);
+	SHOW (DEBUG);
+	SHOW (LOOPBACK);
+	SHOW (POINTOPOINT);
+	SHOW (RUNNING);
+	SHOW (NOARP);
+	SHOW (PROMISC);
+	SHOW (MASTER);
+	SHOW (SLAVE);
+	SHOW (MULTICAST);
+	SHOW (AUTOMEDIA);
+	SHOW (DYNAMIC);
+	SHOW (LOWER_UP);  /* L1 is up */
+
+#undef SHOW
+
+	if (flags != 0)
+		printf ("%04x", flags);
+
+	printf (">");
+}
+
 static void show_proto (unsigned char index)
 {
 	const char *label = rt_proto (index);
@@ -123,7 +165,7 @@ static int process_link (struct nlmsghdr *h, struct ifinfomsg *o, void *ctx)
 		link_show_rta (o, rta);
 
 	printf (" dev-type %u", o->ifi_type);
-	printf (" flags %08x", o->ifi_flags);
+	show_link_flags (o->ifi_flags);
 	printf ("\n");
 
 	return 0;
