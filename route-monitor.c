@@ -116,6 +116,30 @@ static void show_table (unsigned index)
 		printf (" table %u", index);
 }
 
+static void show_route_type (unsigned type)
+{
+#define SHOW(type, name)  case RTN_##type: printf (" %s", name); break;
+
+	switch (type) {
+	case RTN_UNICAST:
+		break;
+	SHOW (LOCAL,		"local")
+	SHOW (BROADCAST,	"broadcast")
+	SHOW (ANYCAST,		"anycast")
+	SHOW (MULTICAST,	"multicast")
+	SHOW (BLACKHOLE,	"blackhole")
+	SHOW (UNREACHABLE,	"unreachable")
+	SHOW (PROHIBIT,		"prohibit")
+	SHOW (THROW,		"trow")
+	SHOW (NAT,		"nat")
+
+	default:
+		printf (" route-type %02x", type);
+	}
+
+#undef SHOW
+}
+
 static void show_dump (const char *prefix, const void *data, size_t size)
 {
 	const unsigned char *p;
@@ -319,6 +343,7 @@ static int process_route (struct nlmsghdr *h, struct rtmsg *rtm, void *ctx)
 		return 0;
 
 	printf ("route %s", h->nlmsg_type == RTM_NEWROUTE ? "add" : "del");
+	show_route_type (rtm->rtm_type);
 
 	for (
 		rta = RTM_RTA (rtm), len = RTM_PAYLOAD (h);
