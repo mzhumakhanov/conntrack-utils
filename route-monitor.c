@@ -130,7 +130,7 @@ static void show_route_type (unsigned type)
 	SHOW (BLACKHOLE,	"blackhole")
 	SHOW (UNREACHABLE,	"unreachable")
 	SHOW (PROHIBIT,		"prohibit")
-	SHOW (THROW,		"trow")
+	SHOW (THROW,		"throw")
 	SHOW (NAT,		"nat")
 
 	default:
