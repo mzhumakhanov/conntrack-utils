@@ -15,7 +15,7 @@ conntrack-flush: CFLAGS += `pkg-config libnetfilter_conntrack --cflags --libs`
 conntrack-flush: nfct-flush-net.o
 
 route-monitor: CFLAGS += `pkg-config libnl-1 --cflags --libs`
-route-monitor: nl-monitor.o
+route-monitor: nl-monitor.o rt-label.o
 
 conntrack-nat-callidus: CFLAGS += `pkg-config libnl-1 libnetfilter_conntrack --cflags --libs`
 conntrack-nat-callidus: nl-monitor.o nfct-flush-net.o
